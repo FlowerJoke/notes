@@ -5,6 +5,8 @@
   sync-laborbuch --no-push   -> same, but do not commit or push
   sync-laborbuch --vault-only -> only the Obsidian copy (private), no PDF, no website
 
+Every run also installs a pre-push hook in each Laborbuch repo: `git push` to GitLab then runs this script.
+
 Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/}
 Vault:   <vault>/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/{README.md,images/}
 Website: <notes repo>/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N.pdf (images embedded)
@@ -27,6 +29,28 @@ SITE_DIR = cp.REPO / FACH / "Laborbuch"
 def die(msg):
     print(f"sync-laborbuch: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+HOOK_MARK = "# managed by sync-laborbuch"
+HOOK = f"""#!/bin/sh
+{HOOK_MARK}: copies the README to the vault and publishes it. Never blocks the push.
+"{HERE / 'sync-laborbuch'}" >&2 || echo "sync-laborbuch failed (push continues)" >&2
+exit 0
+"""
+
+
+def install_hook(repo):
+    """pre-push hook in the Laborbuch repo, so every push to GitLab also syncs the vault and the website."""
+    hook = repo / ".git" / "hooks" / "pre-push"
+    if not hook.parent.is_dir():
+        return
+    if hook.exists() and HOOK_MARK not in hook.read_text(encoding="utf-8"):
+        print(f"  warn  {repo.name}: foreign pre-push hook exists, not touched")
+        return
+    if not hook.exists() or hook.read_text(encoding="utf-8") != HOOK:
+        hook.write_text(HOOK, encoding="utf-8")
+        hook.chmod(0o755)
+        print(f"  hook   installed in {repo.name}")
 
 
 def make_pdf(readme, title, pdf):
@@ -56,6 +80,7 @@ def main():
     for repo in repos:
         n = re.match(r"laborbuch-(\d+)", repo.name).group(1)
         title = f"Laborbuch {n}"
+        install_hook(repo)
         dst = VAULT_DIR / title
         dst.mkdir(parents=True, exist_ok=True)
         shutil.copy2(repo / "README.md", dst / "README.md")
