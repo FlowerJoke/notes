@@ -5,7 +5,8 @@
   sync-laborbuch --no-push   -> same, but do not commit or push
   sync-laborbuch --vault-only -> only the Obsidian copy (private), no PDF, no website
 
-The vault copy gets Obsidian math ($`x`$ -> $x$); the repo README and the PDF are unchanged.
+The README in the Laborbuch repo is converted in place to Obsidian math ($`x`$ -> $x$), so it reads correctly
+when edited in Obsidian (uncommitted change in the repo; pandoc reads $x$ fine).
 Every run also installs a pre-push hook in each Laborbuch repo: `git push` to GitLab then runs this script.
 
 Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/}
@@ -55,7 +56,7 @@ def install_hook(repo):
 
 
 def for_obsidian(text):
-    """GitLab math ($`x`$ and ```math blocks) -> Obsidian math ($x$ and $$ blocks). Vault copy only, the repo README stays as is."""
+    """GitLab math ($`x`$ and ```math blocks) -> Obsidian math ($x$ and $$ blocks)."""
     text = re.sub(r"\$`\s*(.+?)\s*`\$", lambda m: f"${m.group(1)}$", text)
     return re.sub(r"```math\n(.*?)\n```", lambda m: f"$$\n{m.group(1)}\n$$", text, flags=re.S)
 
@@ -90,7 +91,12 @@ def main():
         install_hook(repo)
         dst = VAULT_DIR / title
         dst.mkdir(parents=True, exist_ok=True)
-        (dst / "README.md").write_text(for_obsidian((repo / "README.md").read_text(encoding="utf-8")), encoding="utf-8")
+        src = (repo / "README.md").read_text(encoding="utf-8")
+        fixed = for_obsidian(src)
+        if fixed != src:  # the one place this script writes into a Laborbuch repo: the README must read correctly in Obsidian while editing
+            (repo / "README.md").write_text(fixed, encoding="utf-8")
+            print(f"  math   {repo.name}: README converted to Obsidian math")
+        shutil.copy2(repo / "README.md", dst / "README.md")
         if (repo / "images").is_dir():
             shutil.copytree(repo / "images", dst / "images", dirs_exist_ok=True)
         print(f"  vault  {title}")
