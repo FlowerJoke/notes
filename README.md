@@ -28,6 +28,3 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [03 Matrizenmultiplikation](Lineare%20Algebra/03%20Matrizenmultiplikation.pdf)
 - [04 Eliminationsmethode in Matrix–Schreibweise](Lineare%20Algebra/04%20Eliminationsmethode%20in%20Matrix%E2%80%93Schreibweise.pdf)
 - [05 Inverse Matrix](Lineare%20Algebra/05%20Inverse%20Matrix.pdf)
-
----
-Mitschriften von Levi, ohne Gewähr. Enthalten Ausschnitte aus den Vorlesungsfolien der Professoren (Rechte bei HM / den Lehrenden). Die kompletten Folien und Skripte gibt es auf der Kursplattform.
