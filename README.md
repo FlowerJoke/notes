@@ -16,6 +16,11 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [02 Boolsche Algebra](Grundlagen%20der%20Rechnersysteme/02%20Boolsche%20Algebra.pdf)
 - [03 Kombinatorik](Grundlagen%20der%20Rechnersysteme/03%20Kombinatorik.pdf)
 
+### Laborbuch
+
+- [Laborbuch 1](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%201.pdf)
+- [Laborbuch 2](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%202.pdf)
+
 ## Lineare Algebra
 
 - [01 Zeilen und Spaltenbild](Lineare%20Algebra/01%20Zeilen%20und%20Spaltenbild.pdf)

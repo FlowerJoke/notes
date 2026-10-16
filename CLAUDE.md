@@ -19,6 +19,13 @@ Public repo `FlowerJoke/notes`, published with GitHub Pages at https://flowerjok
 ## Needs
 `pandoc`, `texlive-xetex` (+ recommended collections), `poppler-utils` (`pdftoppm`, `pdfinfo`) on Fedora.
 
+## Laborbuch (`tools/sync-laborbuch`)
+- Symlinked as `~/.local/bin/sync-laborbuch`. Copies (repo -> targets, never back) the READMEs of the HM GitLab repos `~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/` (`README.md` + `images/`). Those repos stay where they are (GitLab remote, HM git identity); `documentation*` and `artefacts/`, `*.cv` are not copied.
+- Copy 1 (private): `Obsidian Vault/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/` (README + images). Not called `Notes`, so `create-pdf` ignores it.
+- Copy 2 (public): `Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N.pdf` (images embedded), shown in its own "Laborbuch" section by `build_site()`. It lives in a subfolder because `create-pdf` trashes every PDF directly in `<Fach>/` that is not one of its notes.
+- Flags: `--no-push`, `--vault-only` (nothing public). Re-run after changing a README; PDFs of repos that no longer exist are trashed.
+- Decision by Levi (2026-10-16): publish everything as is (name, CircuitVerse link, unfinished Laborbuch 2 included), it is for friends. This overrides the "no personal data" rule for these PDFs only.
+
 ## Known quirks
 - LaTeX writes a timestamp into each PDF, so every run produces a new commit even if the notes are unchanged.
 - A note linking to a PDF name that does not exist in the vault shows "not found" in the PDF (currently `02 Variablen` in Einführung in die Programmierung).

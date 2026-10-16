@@ -149,7 +149,7 @@ CSS = """
 @media(prefers-color-scheme:dark){:root{--bg:#14151a;--fg:#ececf0;--mut:#9a9aa5;--card:#1c1e25;--line:#2c2f39;--acc:#7c9cff}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}
 main{max-width:760px;margin:0 auto;padding:40px 16px 64px}h1{font-size:1.7rem;margin:0 0 4px}
-p.sub{color:var(--mut);margin:0 0 28px}a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+p.sub{color:var(--mut);margin:0 0 28px}h2{font-size:1.2rem;margin:32px 0 12px}a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
 .grid{display:grid;gap:12px}.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;color:var(--fg)}
 .card:hover{border-color:var(--acc);text-decoration:none}.card small{display:block;color:var(--mut)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px}
@@ -164,23 +164,38 @@ def page(title, body, depth):
 
 
 def build_site(repo):
-    """Landing page + one page per subject + README, generated from the PDFs in the repo."""
+    """Landing page + one page per subject + README, generated from the PDFs in the repo.
+    PDFs in <Fach>/Laborbuch/ (made by sync-laborbuch) get their own section on the subject page."""
     subs = {}
     for d in sorted(p for p in repo.iterdir() if p.is_dir() and not p.name.startswith(".")):
-        pdfs = sorted(d.glob("*.pdf"))
-        if pdfs:
-            subs[d.name] = pdfs
-    cards = "".join(f'<a class="card" href="{quote(n)}/">{html.escape(n)}<small>{len(f)} Notizen</small></a>' for n, f in subs.items())
+        notes, labs = sorted(d.glob("*.pdf")), sorted((d / "Laborbuch").glob("*.pdf"))
+        if notes or labs:
+            subs[d.name] = (notes, labs)
+
+    def count(notes, labs):
+        return ", ".join(x for x in ((f"{len(notes)} Notizen" if notes else ""), (f"{len(labs)} Laborbücher" if labs else "")) if x)
+
+    def rows(files, prefix=""):
+        return "".join(
+            f'<div class="row"><span>{html.escape(f.stem)}</span><span class="acts"><a href="{prefix}{quote(f.name)}">Ansehen</a>'
+            f'<a href="{prefix}{quote(f.name)}" download>Herunterladen</a></span></div>' for f in files)
+
+    cards = "".join(f'<a class="card" href="{quote(n)}/">{html.escape(n)}<small>{count(*f)}</small></a>' for n, f in subs.items())
     (repo / "index.html").write_text(page("Notizen", f'<h1>Notizen</h1><div class="grid">{cards}</div>', 0), encoding="utf-8")
     readme = ["# Notizen\n", "HM Informatik, Semester 1. Mitschriften als PDF.\n",
               f"Website mit Fächerübersicht: {SITE_URL}\n"]
-    for n, files in subs.items():
-        rows = "".join(
-            f'<div class="row"><span>{html.escape(f.stem)}</span><span class="acts"><a href="{quote(f.name)}">Ansehen</a>'
-            f'<a href="{quote(f.name)}" download>Herunterladen</a></span></div>' for f in files)
-        (repo / n / "index.html").write_text(page(n, f'<a class="back" href="../">← Alle Fächer</a><h1>{html.escape(n)}</h1><p class="sub">{len(files)} Notizen</p><div class="grid">{rows}</div>', 1), encoding="utf-8")
+    for n, (notes, labs) in subs.items():
+        body = f'<a class="back" href="../">← Alle Fächer</a><h1>{html.escape(n)}</h1><p class="sub">{count(notes, labs)}</p>'
+        if notes:
+            body += f'<div class="grid">{rows(notes)}</div>'
+        if labs:
+            body += f'<h2>Laborbuch</h2><div class="grid">{rows(labs, "Laborbuch/")}</div>'
+        (repo / n / "index.html").write_text(page(n, body, 1), encoding="utf-8")
         readme.append(f"\n## {n}\n")
-        readme += [f"- [{f.stem}]({quote(n)}/{quote(f.name)})" for f in files]
+        readme += [f"- [{f.stem}]({quote(n)}/{quote(f.name)})" for f in notes]
+        if labs:
+            readme.append("\n### Laborbuch\n")
+            readme += [f"- [{f.stem}]({quote(n)}/Laborbuch/{quote(f.name)})" for f in labs]
     (repo / "README.md").write_text("\n".join(readme), encoding="utf-8")
 
 
