@@ -10,11 +10,6 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [01 Logik](Analysis/01%20Logik.pdf)
 - [02 Beweisverfahren](Analysis/02%20Beweisverfahren.pdf)
 
-## Einführung in die Programmierung
-
-- [01 Einführung](Einf%C3%BChrung%20in%20die%20Programmierung/01%20Einf%C3%BChrung.pdf)
-- [02 Variablen](Einf%C3%BChrung%20in%20die%20Programmierung/02%20Variablen.pdf)
-
 ## Grundlagen der Rechnersysteme
 
 - [01 Kickoff](Grundlagen%20der%20Rechnersysteme/01%20Kickoff.pdf)
