@@ -5,6 +5,7 @@
   sync-laborbuch --no-push   -> same, but do not commit or push
   sync-laborbuch --vault-only -> only the Obsidian copy (private), no PDF, no website
 
+The vault copy gets Obsidian math ($`x`$ -> $x$); the repo README and the PDF are unchanged.
 Every run also installs a pre-push hook in each Laborbuch repo: `git push` to GitLab then runs this script.
 
 Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/}
@@ -53,6 +54,12 @@ def install_hook(repo):
         print(f"  hook   installed in {repo.name}")
 
 
+def for_obsidian(text):
+    """GitLab math ($`x`$ and ```math blocks) -> Obsidian math ($x$ and $$ blocks). Vault copy only, the repo README stays as is."""
+    text = re.sub(r"\$`\s*(.+?)\s*`\$", lambda m: f"${m.group(1)}$", text)
+    return re.sub(r"```math\n(.*?)\n```", lambda m: f"$$\n{m.group(1)}\n$$", text, flags=re.S)
+
+
 def make_pdf(readme, title, pdf):
     """pandoc README -> PDF; relative image links resolve against the README's folder."""
     r = subprocess.run(
@@ -83,7 +90,7 @@ def main():
         install_hook(repo)
         dst = VAULT_DIR / title
         dst.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(repo / "README.md", dst / "README.md")
+        (dst / "README.md").write_text(for_obsidian((repo / "README.md").read_text(encoding="utf-8")), encoding="utf-8")
         if (repo / "images").is_dir():
             shutil.copytree(repo / "images", dst / "images", dirs_exist_ok=True)
         print(f"  vault  {title}")
