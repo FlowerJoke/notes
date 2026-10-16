@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""create-pdf <subject>: export every note in a subject's Notes folder in the Obsidian vault as its own PDF.
+
+  create-pdf "Lineare Algebra"   -> ~/Levi/Main/Local/Github/notes/Lineare Algebra/*.pdf,
+                                    rebuilds the website pages, commits and pushes to GitHub
+  create-pdf Analysis --no-push  -> export and rebuild pages, but do not commit/push
+  create-pdf Analysis -o ~/Desktop/pdfs -> plain export to another folder (no website, no push)
+  create-pdf all                 -> every subject, one commit and one push
+  create-pdf                     -> lists the subjects
+
+Needs: pandoc, xelatex (texlive-xetex), pdftoppm/pdfinfo (poppler).
+Obsidian PDF embeds (![[file.pdf#page=3&rect=l,b,r,t]]) are rendered as images, like Obsidian's own export.
+"""
+import argparse, html, os, re, shutil, subprocess, sys, tempfile
+from urllib.parse import quote
+from pathlib import Path
+
+VAULT = Path.home() / "Levi/Main/Local/Obsidian Vault"
+REPO = Path(__file__).resolve().parent.parent  # the "notes" repo this script lives in
+SITE_URL = "https://flowerjoke.github.io/notes/"
+SKIP_DIRS = {".git", ".obsidian", ".trash", ".claude", ".opencode", ".copilot", "copilot", "node_modules"}
+DPI = 150
+
+EMBED = re.compile(r"!\[\[([^\]\n]+?)\]\]")
+LINK = re.compile(r"\[\[([^\]\n]+?)\]\]")
+
+
+def die(msg):
+    print(f"create-pdf: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def subjects():
+    out = {}
+    for sem in sorted(VAULT.glob("Semester*")):
+        for d in sorted(p for p in sem.iterdir() if p.is_dir()):
+            out[d.name] = d
+    return out
+
+
+def find_subject(name):
+    subs = subjects()
+    exact = [n for n in subs if n.lower() == name.lower()]
+    hits = exact or [n for n in subs if name.lower() in n.lower()]
+    if len(hits) != 1:
+        die(("no subject matches '%s'" if not hits else "'%s' is ambiguous") % name
+            + ". Subjects: " + ", ".join(subs))
+    return hits[0], subs[hits[0]]
+
+
+_index = None
+
+
+def vault_index():
+    global _index
+    if _index is None:
+        _index = {}
+        for root, dirs, files in os.walk(VAULT):
+            dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+            for f in files:
+                _index.setdefault(f.lower(), []).append(Path(root) / f)
+    return _index
+
+
+def resolve(target, near):
+    """Find a vault file for an Obsidian link target (path or bare name)."""
+    p = VAULT / target
+    for cand in (p, p.with_suffix(".md")):
+        if cand.is_file():
+            return cand
+    name = Path(target).name.lower()
+    cands = vault_index().get(name) or vault_index().get(name + ".md") or []
+    if not cands:
+        return None
+    cands.sort(key=lambda c: (near not in c.parents, len(str(c))))
+    return cands[0]
+
+
+def render_pdf(pdf, page, rect, tmp, cache):
+    key = (pdf, page, rect)
+    if key in cache:
+        return cache[key]
+    info = subprocess.run(["pdfinfo", "-f", str(page), "-l", str(page), str(pdf)],
+                          capture_output=True, text=True).stdout
+    m = re.search(r"Page\s+%d size:\s+([\d.]+) x ([\d.]+)" % page, info)
+    args = ["pdftoppm", "-f", str(page), "-l", str(page), "-r", str(DPI), "-png", "-singlefile"]
+    if rect and m:
+        h = float(m.group(2))
+        l, b, r, t = rect
+        l, r = min(l, r), max(l, r)
+        b, t = min(b, t), max(b, t)
+        s = DPI / 72
+        args += ["-x", str(int(l * s)), "-y", str(int((h - t) * s)),
+                 "-W", str(max(1, int((r - l) * s))), "-H", str(max(1, int((t - b) * s)))]
+    out = tmp / f"pdf{len(cache)}"
+    r = subprocess.run(args + [str(pdf), str(out)], capture_output=True)
+    res = str(out) + ".png" if r.returncode == 0 and Path(str(out) + ".png").is_file() else None
+    cache[key] = res
+    return res
+
+
+def convert(text, note, ctx, depth=0):
+    text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)  # frontmatter
+    text = re.sub(r"%%.*?%%", "", text, flags=re.S)             # obsidian comments
+    text = text.replace("🡢", "→").replace("🡠", "←")
+
+    def embed(m):
+        raw = m.group(1)
+        target, _, alias = raw.partition("|")
+        base, _, frag = target.partition("#")
+        f = resolve(base, note.parent) if base else None
+        if f is None:
+            ctx["warn"].append(f"{note.name}: not found: {base}")
+            return f"*[{base} not found]*"
+        suf = f.suffix.lower()
+        if suf == ".pdf":
+            pm = re.search(r"page=(\d+)", frag)
+            rm = re.search(r"rect=(-?[\d.]+),(-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", frag)
+            if not pm:
+                return f"*[{f.name}]*"
+            img = render_pdf(f, int(pm.group(1)), tuple(map(float, rm.groups())) if rm else None,
+                             ctx["tmp"], ctx["cache"])
+            if img is None:
+                ctx["warn"].append(f"{note.name}: could not render {f.name} p.{pm.group(1)}")
+                return f"*[{f.name}, p.{pm.group(1)}]*"
+            return f"\n\n![]({img}){{width=100%}}\n\n"
+        if suf in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"):
+            return f"\n\n![]({f}){{width=100%}}\n\n"
+        if suf == ".md" and depth < 2:
+            return "\n\n" + convert(f.read_text(encoding="utf-8"), f, ctx, depth + 1) + "\n\n"
+        return f"*[{f.name}]*"
+
+    # MathJax accepts $$ \begin{align}..\end{align} $$, LaTeX does not: drop the $$ and use the unnumbered form
+    text = re.sub(r"\$\$\s*\\begin\{(align|alignat|gather|multline|flalign|eqnarray)\*?\}(.*?)\\end\{\1\*?\}\s*\$\$",
+                  lambda m: f"\n\\begin{{{m.group(1)}*}}{m.group(2)}\\end{{{m.group(1)}*}}\n", text, flags=re.S)
+    text = EMBED.sub(embed, text)
+    text = LINK.sub(lambda m: (m.group(1).split("|")[-1] if "|" in m.group(1)
+                               else m.group(1).split("#")[0].split("/")[-1]), text)
+    # callouts: "> [!note] Title" -> quote with bold title
+    text = re.sub(r"^(>\s*)\[!(\w+)\][+-]?\s*(.*)$",
+                  lambda m: f"{m.group(1)}**{m.group(3) or m.group(2).capitalize()}**", text, flags=re.M)
+    text = re.sub(r"==(.+?)==", r"\1", text)                    # highlights
+    text = re.sub(r"([^\n])\n(#{1,6}[ \t])", r"\1\n\n\2", text)  # Obsidian lets a heading follow a line directly
+    return text
+
+
+CSS = """
+:root{--bg:#fafaf8;--fg:#1d1d1f;--mut:#6b6b70;--card:#fff;--line:#e4e4e0;--acc:#3b6df0}
+@media(prefers-color-scheme:dark){:root{--bg:#14151a;--fg:#ececf0;--mut:#9a9aa5;--card:#1c1e25;--line:#2c2f39;--acc:#7c9cff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 16px 64px}h1{font-size:1.7rem;margin:0 0 4px}
+p.sub{color:var(--mut);margin:0 0 28px}a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.grid{display:grid;gap:12px}.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;color:var(--fg)}
+.card:hover{border-color:var(--acc);text-decoration:none}.card small{display:block;color:var(--mut)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px}
+.row span{overflow-wrap:anywhere}.row .acts{display:flex;gap:16px;white-space:nowrap}.back{display:inline-block;margin-bottom:18px}
+footer{margin-top:40px;color:var(--mut);font-size:.85rem}
+"""
+
+
+def page(title, body, depth):
+    return (f'<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>{html.escape(title)}</title><style>{CSS}</style></head><body><main>{body}</main></body></html>')
+
+
+def build_site(repo):
+    """Landing page + one page per subject + README, generated from the PDFs in the repo."""
+    subs = {}
+    for d in sorted(p for p in repo.iterdir() if p.is_dir() and not p.name.startswith(".")):
+        pdfs = sorted(d.glob("*.pdf"))
+        if pdfs:
+            subs[d.name] = pdfs
+    cards = "".join(f'<a class="card" href="{quote(n)}/">{html.escape(n)}<small>{len(f)} Notizen</small></a>' for n, f in subs.items())
+    (repo / "index.html").write_text(page("Notizen", f'<h1>Notizen</h1><div class="grid">{cards}</div>', 0), encoding="utf-8")
+    readme = ["# Notizen\n", "HM Informatik, Semester 1. Mitschriften als PDF.\n",
+              f"Website mit Fächerübersicht: {SITE_URL}\n"]
+    for n, files in subs.items():
+        rows = "".join(
+            f'<div class="row"><span>{html.escape(f.stem)}</span><span class="acts"><a href="{quote(f.name)}">Ansehen</a>'
+            f'<a href="{quote(f.name)}" download>Herunterladen</a></span></div>' for f in files)
+        (repo / n / "index.html").write_text(page(n, f'<a class="back" href="../">← Alle Fächer</a><h1>{html.escape(n)}</h1><p class="sub">{len(files)} Notizen</p><div class="grid">{rows}</div>', 1), encoding="utf-8")
+        readme.append(f"\n## {n}\n")
+        readme += [f"- [{f.stem}]({quote(n)}/{quote(f.name)})" for f in files]
+    (repo / "README.md").write_text("\n".join(readme), encoding="utf-8")
+
+
+def publish(repo, subject):
+    git = ["git", "-C", str(repo)]
+    subprocess.run(git + ["add", "-A"], check=True)
+    if subprocess.run(git + ["diff", "--cached", "--quiet"]).returncode == 0:
+        print("nothing changed, nothing to push")
+        return
+    subprocess.run(git + ["commit", "-q", "-m", f"{subject}: Notizen aktualisiert"], check=True)
+    r = subprocess.run(git + ["push", "-q", "-u", "origin", "main"])
+    print("pushed to GitHub" if r.returncode == 0 else "PUSH FAILED (the commit is saved locally)")
+
+
+def export(name, folder, out):
+    """Export one subject's Notes folder. Returns the number of PDFs made (None if there are no notes)."""
+    notes_dir = folder / "Notes"
+    notes = sorted(p for p in notes_dir.rglob("*.md")
+                   if not any(part.startswith(".") for part in p.relative_to(notes_dir).parts)) if notes_dir.is_dir() else []
+    if not notes:
+        print(f"{name}: no notes in {notes_dir}, skipped")
+        return None
+    out.mkdir(parents=True, exist_ok=True)
+    names = [n.stem for n in notes]
+    ctx = {"warn": [], "cache": {}}
+    ok = 0
+    made = set()
+    print(f"== {name}")
+    with tempfile.TemporaryDirectory() as t:
+        ctx["tmp"] = Path(t)
+        for n in notes:
+            stem = n.stem if names.count(n.stem) == 1 else f"{n.parent.name} - {n.stem}"
+            md = Path(t) / "note.md"
+            body = convert(n.read_text(encoding="utf-8"), n, ctx)
+            if not body.strip():
+                print(f"  skip (empty note): {n.name}")
+                continue
+            md.write_text(body, encoding="utf-8")
+            pdf = out / f"{stem}.pdf"
+            r = subprocess.run(
+                ["pandoc", str(md), "-f", "markdown+hard_line_breaks+tex_math_dollars-yaml_metadata_block",
+                 "-o", str(pdf), "--pdf-engine=xelatex",
+                 "-V", "geometry:margin=2cm", "-V", "fontsize=11pt",
+                 "-M", f"title={stem}"],
+                capture_output=True, text=True)
+            if r.returncode == 0:
+                ok += 1
+                made.add(pdf.name)
+                print(f"  ok  {pdf.name}")
+            else:
+                print(f"FAIL  {n.name}: {r.stderr.strip().splitlines()[-1] if r.stderr.strip() else 'pandoc error'}")
+    for old in sorted(out.glob("*.pdf")):
+        if old.name not in made:
+            subprocess.run(["gio", "trash", str(old)])
+            print(f"  removed (note no longer exists): {old.name}")
+    for w in ctx["warn"]:
+        print("  warn", w)
+    print(f"{ok}/{len(notes)} PDFs in {out}")
+    return ok
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Export every note of a subject as its own PDF.")
+    ap.add_argument("subject", nargs="?", help='subject name, or "all" for every subject')
+    ap.add_argument("-o", "--out", help="plain export to this folder (no website pages, no push; single subject only)")
+    ap.add_argument("--no-push", action="store_true", help="export and rebuild the pages, but do not commit or push")
+    a = ap.parse_args()
+    if not a.subject:
+        print("Subjects:\n  " + "\n  ".join(subjects()) + "\n\nUse: create-pdf <subject>   or   create-pdf all")
+        return
+    for tool in ("pandoc", "pdftoppm", "xelatex"):
+        if not shutil.which(tool):
+            die(f"'{tool}' is not installed")
+    if a.subject.lower() == "all":
+        if a.out:
+            die("-o works with a single subject only")
+        results = [export(n, f, REPO / n) for n, f in subjects().items()]
+        label = "alle Fächer"
+        ok = sum(r or 0 for r in results)
+    else:
+        name, folder = find_subject(a.subject)
+        out = Path(a.out).expanduser() if a.out else REPO / name
+        ok = export(name, folder, out)
+        if ok is None:
+            die(f"no notes in {folder / 'Notes'}")
+        label = name
+    if not a.out and ok:
+        build_site(REPO)
+        if not a.no_push:
+            publish(REPO, label)
+
+
+if __name__ == "__main__":
+    main()
