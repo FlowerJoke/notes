@@ -20,6 +20,7 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 
 - [Laborbuch 1](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%201.pdf)
 - [Laborbuch 2](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%202.pdf)
+- [Laborbuch 3](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%203.pdf)
 
 ## Lineare Algebra
 
@@ -28,5 +29,6 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [03 Matrizenmultiplikation](Lineare%20Algebra/03%20Matrizenmultiplikation.pdf)
 - [04 Eliminationsmethode in Matrix–Schreibweise](Lineare%20Algebra/04%20Eliminationsmethode%20in%20Matrix%E2%80%93Schreibweise.pdf)
 - [05 Inverse Matrix](Lineare%20Algebra/05%20Inverse%20Matrix.pdf)
-- [06 LU–Zerlegung](Lineare%20Algebra/06%20LU%E2%80%93Zerlegung.pdf)
+- [06 LU - Zerlegung 1](Lineare%20Algebra/06%20LU%20-%20Zerlegung%201.pdf)
+- [06 LU - Zerlegung 2](Lineare%20Algebra/06%20LU%20-%20Zerlegung%202.pdf)
 - [07 Vektorräume](Lineare%20Algebra/07%20Vektorr%C3%A4ume.pdf)

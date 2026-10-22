@@ -257,6 +257,14 @@ def export(name, folder, out):
     return ok
 
 
+def sync_laborbuch(vault_only):
+    """Grundlagen der Rechnersysteme: also copy the Laborbuch READMEs into the vault (tools/sync-laborbuch).
+    Never commits or pushes itself; the publish below picks up the Laborbuch PDFs it made."""
+    cmd = [str(Path(__file__).resolve().parent / "sync-laborbuch"), "--no-push"] + (["--vault-only"] if vault_only else [])
+    if subprocess.run(cmd).returncode != 0:
+        print("create-pdf: sync-laborbuch failed (continuing)", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Export every note of a subject as its own PDF.")
     ap.add_argument("subject", nargs="?", help='subject name, or "all" for every subject')
@@ -272,12 +280,15 @@ def main():
     if a.subject.lower() == "all":
         if a.out:
             die("-o works with a single subject only")
+        sync_laborbuch(vault_only=False)
         results = [export(n, f, REPO / n) for n, f in subjects().items()]
         label = "alle Fächer"
         ok = sum(r or 0 for r in results)
     else:
         name, folder = find_subject(a.subject)
         out = Path(a.out).expanduser() if a.out else REPO / name
+        if name == "Grundlagen der Rechnersysteme":
+            sync_laborbuch(vault_only=bool(a.out))  # -o means "nothing public": only the private vault copy
         ok = export(name, folder, out)
         if ok is None:
             die(f"no notes in {folder / 'Notes'}")
