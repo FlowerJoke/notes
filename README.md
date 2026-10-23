@@ -10,6 +10,26 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [01 Logik](Analysis/01%20Logik.pdf)
 - [02 Beweisverfahren](Analysis/02%20Beweisverfahren.pdf)
 
+## Einführung in die Programmierung
+
+- [00 Übersicht](Einf%C3%BChrung%20in%20die%20Programmierung/00%20%C3%9Cbersicht.pdf)
+- [01 Einführung](Einf%C3%BChrung%20in%20die%20Programmierung/01%20Einf%C3%BChrung.pdf)
+- [01a Programmiersprachen](Einf%C3%BChrung%20in%20die%20Programmierung/01a%20Programmiersprachen.pdf)
+- [01b Java](Einf%C3%BChrung%20in%20die%20Programmierung/01b%20Java.pdf)
+- [02 Variablen](Einf%C3%BChrung%20in%20die%20Programmierung/02%20Variablen.pdf)
+- [02a Numerische Datentypen](Einf%C3%BChrung%20in%20die%20Programmierung/02a%20Numerische%20Datentypen.pdf)
+- [02b Zweierkomplement](Einf%C3%BChrung%20in%20die%20Programmierung/02b%20Zweierkomplement.pdf)
+- [02c char und Zeichensätze](Einf%C3%BChrung%20in%20die%20Programmierung/02c%20char%20und%20Zeichens%C3%A4tze.pdf)
+- [02d String und boolean](Einf%C3%BChrung%20in%20die%20Programmierung/02d%20String%20und%20boolean.pdf)
+- [02e Arithmetische Operatoren](Einf%C3%BChrung%20in%20die%20Programmierung/02e%20Arithmetische%20Operatoren.pdf)
+- [02f Arrays](Einf%C3%BChrung%20in%20die%20Programmierung/02f%20Arrays.pdf)
+- [03 Kontrollfluss](Einf%C3%BChrung%20in%20die%20Programmierung/03%20Kontrollfluss.pdf)
+- [03a Operatoren in Bedingungen](Einf%C3%BChrung%20in%20die%20Programmierung/03a%20Operatoren%20in%20Bedingungen.pdf)
+- [04 if-Anweisung](Einf%C3%BChrung%20in%20die%20Programmierung/04%20if-Anweisung.pdf)
+- [04a Schleifen](Einf%C3%BChrung%20in%20die%20Programmierung/04a%20Schleifen.pdf)
+- [04b Switch](Einf%C3%BChrung%20in%20die%20Programmierung/04b%20Switch.pdf)
+- [99 Übungsaufgaben](Einf%C3%BChrung%20in%20die%20Programmierung/99%20%C3%9Cbungsaufgaben.pdf)
+
 ## Grundlagen der Rechnersysteme
 
 - [02 Boolsche Algebra](Grundlagen%20der%20Rechnersysteme/02%20Boolsche%20Algebra.pdf)
