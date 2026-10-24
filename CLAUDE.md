@@ -19,6 +19,11 @@ Public repo `FlowerJoke/notes`, published with GitHub Pages at https://flowerjok
 ## Needs
 `pandoc`, `texlive-xetex` (+ recommended collections), `poppler-utils` (`pdftoppm`, `pdfinfo`) on Fedora.
 
+## Auto-run when the Obsidian vault is pushed (added 2026-10-23, Levi's request)
+- The vault is a git repo (remote `obsidian` -> `FlowerJoke/Obsidian`, pushed by the obsidian-git plugin). Its untracked `.git/hooks/pre-push` only does `touch ~/.local/state/notes-pdf.trigger` (never blocks the push).
+- Obsidian is a Flatpak (no pandoc/xelatex, no host access), so it cannot run `create-pdf` itself. The systemd user units `~/.config/systemd/user/notes-pdf.path` (watches the trigger file) and `notes-pdf.service` (waits 20 s, then runs `create-pdf all`) do it on the host. Logs: `journalctl --user -u notes-pdf.service`.
+- Tested end to end: hook -> service -> PDFs rebuilt -> pushed. If the vault is ever re-cloned, re-create the hook; the units live outside the repos.
+
 ## Laborbuch (`tools/sync-laborbuch`)
 - Symlinked as `~/.local/bin/sync-laborbuch`. Copies (repo -> targets, never back) the READMEs of the HM GitLab repos `~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/` (`README.md` + `images/`). Those repos stay where they are (GitLab remote, HM git identity); `documentation*` and `artefacts/`, `*.cv` are not copied.
 - Copy 1 (private): `Obsidian Vault/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/` (README + images). Not called `Notes`, so `create-pdf` ignores it.
