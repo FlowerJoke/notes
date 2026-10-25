@@ -12,7 +12,6 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 
 ## Einführung in die Programmierung
 
-- [00 Übersicht](Einf%C3%BChrung%20in%20die%20Programmierung/00%20%C3%9Cbersicht.pdf)
 - [01 Einführung](Einf%C3%BChrung%20in%20die%20Programmierung/01%20Einf%C3%BChrung.pdf)
 - [01a Programmiersprachen](Einf%C3%BChrung%20in%20die%20Programmierung/01a%20Programmiersprachen.pdf)
 - [01b Java](Einf%C3%BChrung%20in%20die%20Programmierung/01b%20Java.pdf)
