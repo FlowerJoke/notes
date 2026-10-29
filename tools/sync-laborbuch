@@ -9,9 +9,9 @@ The README in the Laborbuch repo is converted in place to Obsidian math ($`x`$ -
 when edited in Obsidian (uncommitted change in the repo; pandoc reads $x$ fine).
 Every run also installs a pre-push hook in each Laborbuch repo: `git push` to GitLab then runs this script.
 
-Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/}
-Vault:   <vault>/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/{README.md,images/}
-Website: <notes repo>/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N.pdf (images embedded)
+Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/,Arbeitsblatt*.pdf}
+Vault:   ~/Levi/Main/Local/Studium/Obsidian/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/{README.md,images/,Arbeitsblatt*.pdf}
+Website: <notes repo>/Grundlagen der Rechnersysteme/Laborbuch/{Laborbuch N.pdf (README, images embedded), Arbeitsblatt*.pdf}
 """
 import argparse, importlib.machinery, importlib.util, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -35,14 +35,14 @@ def die(msg):
 
 HOOK_MARK = "# managed by sync-laborbuch"
 HOOK = f"""#!/bin/sh
-{HOOK_MARK}: copies the README to the vault and publishes it. Never blocks the push.
-"{HERE / 'sync-laborbuch'}" >&2 || echo "sync-laborbuch failed (push continues)" >&2
+{HOOK_MARK}: tells the host to run `create-pdf all` (laborbuch sync + all notes + website), see notes-pdf.path. Never blocks the push.
+touch "$HOME/.local/state/notes-pdf.trigger" 2>/dev/null
 exit 0
 """
 
 
 def install_hook(repo):
-    """pre-push hook in the Laborbuch repo, so every push to GitLab also syncs the vault and the website."""
+    """pre-push hook in the Laborbuch repo, so every push to GitLab triggers the full export (vault copy, all PDFs, website)."""
     hook = repo / ".git" / "hooks" / "pre-push"
     if not hook.parent.is_dir():
         return
@@ -53,6 +53,20 @@ def install_hook(repo):
         hook.write_text(HOOK, encoding="utf-8")
         hook.chmod(0o755)
         print(f"  hook   installed in {repo.name}")
+
+
+SHEET = "Arbeitsblatt*.pdf"  # the HM worksheet, placed in each Laborbuch repo by hand; never committed to GitLab, published on the website (Levi, 2026-10-29)
+
+
+def exclude_sheet(repo):
+    """Keep the worksheet PDF out of git (local .git/info/exclude, nothing tracked), so it cannot slip into a commit to GitLab."""
+    ex = repo / ".git" / "info" / "exclude"
+    if not ex.parent.is_dir():
+        return
+    cur = ex.read_text(encoding="utf-8") if ex.exists() else ""
+    if SHEET not in cur.splitlines():
+        ex.write_text(cur + ("" if cur.endswith("\n") or not cur else "\n") + SHEET + "\n", encoding="utf-8")
+        print(f"  ignore {repo.name}: {SHEET} (local exclude)")
 
 
 def for_obsidian(text):
@@ -89,6 +103,7 @@ def main():
         n = re.match(r"laborbuch-(\d+)", repo.name).group(1)
         title = f"Laborbuch {n}"
         install_hook(repo)
+        exclude_sheet(repo)
         dst = VAULT_DIR / title
         dst.mkdir(parents=True, exist_ok=True)
         src = (repo / "README.md").read_text(encoding="utf-8")
@@ -97,12 +112,20 @@ def main():
             (repo / "README.md").write_text(fixed, encoding="utf-8")
             print(f"  math   {repo.name}: README converted to Obsidian math")
         shutil.copy2(repo / "README.md", dst / "README.md")
+        sheets = sorted(repo.glob(SHEET))
+        for sheet in sheets:
+            shutil.copy2(sheet, dst / sheet.name)
+            print(f"  sheet  {sheet.name}")
         if (repo / "images").is_dir():
             shutil.copytree(repo / "images", dst / "images", dirs_exist_ok=True)
         print(f"  vault  {title}")
         if a.vault_only:
             continue
         SITE_DIR.mkdir(parents=True, exist_ok=True)
+        for sheet in sheets:  # the worksheet PDF is published as is, next to the Laborbuch PDF
+            shutil.copy2(sheet, SITE_DIR / sheet.name)
+            made.add(sheet.name)
+            print(f"  pdf    {sheet.name}")
         ok, err = make_pdf(repo / "README.md", title, SITE_DIR / f"{title}.pdf")
         if ok:
             made.add(f"{title}.pdf")

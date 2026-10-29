@@ -15,7 +15,7 @@ import argparse, html, os, re, shutil, subprocess, sys, tempfile
 from urllib.parse import quote
 from pathlib import Path
 
-VAULT = Path.home() / "Levi/Main/Local/Obsidian Vault"
+VAULT = Path.home() / "Levi/Main/Local/Studium/Obsidian"
 REPO = Path(__file__).resolve().parent.parent  # the "notes" repo this script lives in
 SITE_URL = "https://flowerjoke.github.io/notes/"
 SKIP_DIRS = {".git", ".obsidian", ".trash", ".claude", ".opencode", ".copilot", "copilot", "node_modules"}
