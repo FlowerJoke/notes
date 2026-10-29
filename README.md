@@ -26,10 +26,6 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 
 ### Laborbuch
 
-- [Arbeitsblatt Praktikum 1](Grundlagen%20der%20Rechnersysteme/Laborbuch/Arbeitsblatt%20Praktikum%201.pdf)
-- [Arbeitsblatt Praktikum 2](Grundlagen%20der%20Rechnersysteme/Laborbuch/Arbeitsblatt%20Praktikum%202.pdf)
-- [Arbeitsblatt Praktikum 3](Grundlagen%20der%20Rechnersysteme/Laborbuch/Arbeitsblatt%20Praktikum%203.pdf)
-- [Arbeitsblatt Praktikum 4](Grundlagen%20der%20Rechnersysteme/Laborbuch/Arbeitsblatt%20Praktikum%204.pdf)
 - [Laborbuch 1](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%201.pdf)
 - [Laborbuch 2](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%202.pdf)
 - [Laborbuch 3](Grundlagen%20der%20Rechnersysteme/Laborbuch/Laborbuch%203.pdf)

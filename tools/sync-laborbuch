@@ -11,7 +11,7 @@ Every run also installs a pre-push hook in each Laborbuch repo: `git push` to Gi
 
 Source:  ~/Levi/Main/Local/Studium/Grundlagen der Rechnersysteme/laborbuch-N_*/{README.md,images/,Arbeitsblatt*.pdf}
 Vault:   ~/Levi/Main/Local/Studium/Obsidian/Semester 1/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N/{README.md,images/,Arbeitsblatt*.pdf}
-Website: <notes repo>/Grundlagen der Rechnersysteme/Laborbuch/{Laborbuch N.pdf (README, images embedded), Arbeitsblatt*.pdf}
+Website: <notes repo>/Grundlagen der Rechnersysteme/Laborbuch/Laborbuch N.pdf (README, images embedded; no worksheet)
 """
 import argparse, importlib.machinery, importlib.util, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -55,7 +55,7 @@ def install_hook(repo):
         print(f"  hook   installed in {repo.name}")
 
 
-SHEET = "Arbeitsblatt*.pdf"  # the HM worksheet, placed in each Laborbuch repo by hand; never committed to GitLab, published on the website (Levi, 2026-10-29)
+SHEET = "Arbeitsblatt*.pdf"  # the HM worksheet, placed in each Laborbuch repo by hand; never committed to GitLab, copied to the vault only, never published (Levi, 2026-10-29)
 
 
 def exclude_sheet(repo):
@@ -122,10 +122,6 @@ def main():
         if a.vault_only:
             continue
         SITE_DIR.mkdir(parents=True, exist_ok=True)
-        for sheet in sheets:  # the worksheet PDF is published as is, next to the Laborbuch PDF
-            shutil.copy2(sheet, SITE_DIR / sheet.name)
-            made.add(sheet.name)
-            print(f"  pdf    {sheet.name}")
         ok, err = make_pdf(repo / "README.md", title, SITE_DIR / f"{title}.pdf")
         if ok:
             made.add(f"{title}.pdf")
