@@ -9,6 +9,7 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 
 - [01 Logik](Analysis/01%20Logik.pdf)
 - [02 Beweisverfahren](Analysis/02%20Beweisverfahren.pdf)
+- [Cheat Sheet](Analysis/Cheat%20Sheet.pdf)
 
 ## Einführung in die Programmierung
 
