@@ -41,4 +41,5 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [05 Inverse Matrix](Lineare%20Algebra/05%20Inverse%20Matrix.pdf)
 - [06 LU - Zerlegung 1](Lineare%20Algebra/06%20LU%20-%20Zerlegung%201.pdf)
 - [06 LU - Zerlegung 2](Lineare%20Algebra/06%20LU%20-%20Zerlegung%202.pdf)
-- [07 Vektorräume](Lineare%20Algebra/07%20Vektorr%C3%A4ume.pdf)
+- [07 Vektorräume und Unterräume](Lineare%20Algebra/07%20Vektorr%C3%A4ume%20und%20Unterr%C3%A4ume.pdf)
+- [08 Spaltenraum und Nullraum](Lineare%20Algebra/08%20Spaltenraum%20und%20Nullraum.pdf)
