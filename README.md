@@ -31,7 +31,6 @@ Website mit Fächerübersicht: https://flowerjoke.github.io/notes/
 - [32 Unendliche Reihen und Konvergenzkriterien](Analysis/32%20Unendliche%20Reihen%20und%20Konvergenzkriterien.pdf)
 - [33 Taylorentwicklung](Analysis/33%20Taylorentwicklung.pdf)
 - [34 Potenzreihen](Analysis/34%20Potenzreihen.pdf)
-- [Cheat Sheet](Analysis/Cheat%20Sheet.pdf)
 
 ## Einführung in die Programmierung
 
